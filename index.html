@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Chiếu Slide Tối Giản</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                        accent: '#0284c7',
+                        accenthover: '#0369a1',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* CSS tuỳ chỉnh cho trải nghiệm mượt mà */
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Hiệu ứng ẩn nút thoát sau 3s */
+        .exit-btn-floating {
+            transition: opacity 0.3s ease, transform 0.2s ease;
+        }
+        .exit-btn-floating.hidden-btn {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Tùy chỉnh thanh cuộn modal */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-white">
+
+    <!-- Navbar / Header đơn giản -->
+    <header class="w-full max-w-5xl mx-auto p-6 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center text-white shadow-lg shadow-sky-600/30">
+                <i class="fa-solid fa-file-powerpoint text-xl"></i>
+            </div>
+            <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                SlideStream
+            </span>
+        </div>
+        <button onclick="openModal('help-modal')" class="text-sm font-medium text-slate-400 hover:text-sky-400 transition-colors flex items-center gap-2 bg-slate-800/60 hover:bg-slate-800 px-4 py-2 rounded-full border border-slate-700/50">
+            <i class="fa-regular fa-circle-question text-base"></i>
+            <span>Hướng dẫn lấy link</span>
+        </button>
+    </header>
+
+    <!-- Khu vực chính / Main Form -->
+    <main class="w-full max-w-3xl mx-auto px-6 py-8 flex-grow flex flex-col justify-center">
+        
+        <!-- Card nhập liệu chính -->
+        <div class="bg-cardbg/80 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+            <!-- Dải sáng trang trí -->
+            <div class="absolute -top-24 -left-24 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="text-center mb-8">
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-3">
+                    Trình Chiếu Slide Tối Giản
+                </h1>
+                <p class="text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
+                    Dán đường dẫn từ Google Slides hoặc Canva để bắt đầu trình chiếu toàn màn hình tức thì, giữ nguyên 100% hiệu ứng và phông chữ.
+                </p>
+            </div>
+
+            <!-- Form Nhập Link -->
+            <form id="slide-form" onsubmit="handleStartPresentation(event)" class="space-y-4">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-link text-lg"></i>
+                    </div>
+                    <input 
+                        type="url" 
+                        id="slide-url" 
+                        required
+                        placeholder="Dán link Google Slides hoặc Canva vào đây..." 
+                        class="w-full pl-12 pr-4 py-4 bg-slate-900/90 border border-slate-700 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 rounded-2xl text-white placeholder-slate-500 text-sm sm:text-base outline-none transition-all shadow-inner"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <button 
+                    type="submit" 
+                    class="w-full py-4 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-semibold rounded-2xl shadow-lg shadow-sky-600/25 active:scale-[0.99] transition-all flex items-center justify-center gap-3 text-base sm:text-lg cursor-pointer"
+                >
+                    <i class="fa-solid fa-play"></i>
+                    <span>Trình chiếu ngay</span>
+                </button>
+            </form>
+
+            <!-- Thông báo lỗi (nếu link không hợp lệ) -->
+            <div id="error-message" class="hidden mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="error-text">Đường dẫn không hợp lệ. Vui lòng kiểm tra lại.</span>
+            </div>
+
+            <!-- Hướng dẫn 2 bước ngắn gọn -->
+            <div class="mt-8 pt-6 border-t border-slate-700/50 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-400">
+                <div class="flex items-center gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                    <div class="w-7 h-7 rounded-lg bg-slate-800 text-sky-400 font-bold flex items-center justify-center flex-shrink-0">1</div>
+                    <span>Sao chép liên kết chia sẻ từ Slides / Canva</span>
+                </div>
+                <div class="flex items-center gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                    <div class="w-7 h-7 rounded-lg bg-slate-800 text-sky-400 font-bold flex items-center justify-center flex-shrink-0">2</div>
+                    <span>Dán vào ô trên & nhấn <b>Trình chiếu ngay</b></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab gợi ý cho File PowerPoint (.pptx) -->
+        <div class="mt-6 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 text-slate-300 text-xs sm:text-sm">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-file-powerpoint"></i>
+                </div>
+                <div>
+                    <span class="font-semibold text-white">Bạn đang có file PowerPoint (.pptx)?</span>
+                    <p class="text-slate-400 text-xs mt-0.5">Để giữ nguyên hiệu ứng và phông chữ, hãy tải file lên Google Drive rồi lấy link chia sẻ.</p>
+                </div>
+            </div>
+            <button onclick="openModal('pptx-modal')" class="whitespace-nowrap text-xs font-medium text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-2 rounded-xl transition-colors border border-amber-500/20">
+                Xem hướng dẫn 30s
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-5xl mx-auto p-6 text-center text-xs text-slate-500">
+        <p>SlideStream &copy; 2026 - Công cụ trình chiếu slide trực tuyến tối giản & bảo toàn hiệu ứng.</p>
+    </footer>
+
+
+    <!-- ================= KHU VỰC TRÌNH CHIẾU FULLSCREEN ================= -->
+    <div id="presentation-view" class="fixed inset-0 z-50 bg-black hidden flex-col justify-center items-center">
+        <!-- Nút Thoát Nổi (Floating Exit Button) -->
+        <button 
+            id="floating-exit-btn"
+            onclick="exitPresentation()" 
+            class="exit-btn-floating fixed top-5 right-5 z-50 bg-slate-900/80 hover:bg-slate-800 text-white border border-slate-700/80 px-4 py-2.5 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2.5 text-sm font-medium transition-all group cursor-pointer"
+            title="Thoát chế độ trình chiếu (Hoặc nhấn ESC)"
+        >
+            <i class="fa-solid fa-xmark text-slate-400 group-hover:text-white transition-colors"></i>
+            <span>Thoát màn hình</span>
+            <span class="text-[10px] bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded ml-1">ESC</span>
+        </button>
+
+        <!-- Thẻ Iframe chiếu Slide -->
+        <iframe 
+            id="slide-iframe" 
+            src="" 
+            class="w-full h-full border-0" 
+            allowfullscreen="true" 
+            mozallowfullscreen="true" 
+            webkitallowfullscreen="true">
+        </iframe>
+    </div>
+
+
+    <!-- ================= MODALS / POPUPS ================= -->
+
+    <!-- Modal Hướng dẫn lấy Link -->
+    <div id="help-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-cardbg border border-slate-700 w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('help-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-sky-400"></i>
+                Cách lấy link chia sẻ chuẩn
+            </h3>
+
+            <!-- Google Slides -->
+            <div class="mb-6 space-y-2">
+                <div class="flex items-center gap-2 text-sky-400 font-semibold text-sm">
+                    <i class="fa-brands fa-google-drive"></i>
+                    <span>Đối với Google Slides:</span>
+                </div>
+                <ol class="list-decimal list-inside text-xs sm:text-sm text-slate-300 space-y-1.5 pl-2 leading-relaxed">
+                    <li>Mở file slide trên Google Slides.</li>
+                    <li>Nhấn nút <b>Chia sẻ (Share)</b> ở góc trên bên phải.</li>
+                    <li>Đổi quyền thành <b>"Bất kỳ ai có liên kết" (Anyone with the link)</b>.</li>
+                    <li>Bấm <b>Sao chép liên kết (Copy link)</b> và dán vào ứng dụng.</li>
+                </ol>
+            </div>
+
+            <!-- Canva -->
+            <div class="mb-6 space-y-2 border-t border-slate-700/60 pt-4">
+                <div class="flex items-center gap-2 text-teal-400 font-semibold text-sm">
+                    <i class="fa-solid fa-palette"></i>
+                    <span>Đối với Canva:</span>
+                </div>
+                <ol class="list-decimal list-inside text-xs sm:text-sm text-slate-300 space-y-1.5 pl-2 leading-relaxed">
+                    <li>Mở thiết kế slide trên Canva.</li>
+                    <li>Bấm nút <b>Chia sẻ (Share)</b> ở góc phải.</li>
+                    <li>Chọn <b>Xem công khai (Public view link)</b> hoặc <b>Nhúng (Embed)</b>.</li>
+                    <li>Sao chép liên kết đó và dán vào đây.</li>
+                </ol>
+            </div>
+
+            <button onclick="closeModal('help-modal')" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl text-sm transition-colors border border-slate-700">
+                Đã hiểu
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Hướng dẫn File PPTX -->
+    <div id="pptx-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-cardbg border border-slate-700 w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('pptx-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-file-powerpoint text-amber-400"></i>
+                Mẹo giữ nguyên hiệu ứng File .PPTX
+            </h3>
+
+            <p class="text-slate-300 text-xs sm:text-sm mb-4 leading-relaxed">
+                Để file PowerPoint của bạn hiển thị chính xác 100% hiệu ứng chuyển cảnh, hoạt ảnh và không bao giờ bị lỗi phông chữ khi trình chiếu trên trình duyệt, hãy thực hiện 3 bước đơn giản:
+            </p>
+
+            <div class="space-y-3 text-xs sm:text-sm text-slate-300 mb-6">
+                <div class="flex items-start gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</span>
+                    <span>Tải file <b>.pptx</b> của bạn lên <b>Google Drive</b>.</span>
+                </div>
+                <div class="flex items-start gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>
+                    <span>Nhấp chuột phải vào file trên Drive &rarr; chọn <b>Mở bằng Google Trang trình bày (Google Slides)</b>.</span>
+                </div>
+                <div class="flex items-start gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>
+                    <span>Sao chép đường dẫn (link) của trang đó dán vào đây để trình chiếu!</span>
+                </div>
+            </div>
+
+            <button onclick="closeModal('pptx-modal')" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-amber-600/20">
+                Đã hiểu & Tiếp tục
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        // --- 1. CHUYỂN ĐỔI LINK THÔNG MINH ---
+        function parseAndCleanSlideUrl(url) {
+            try {
+                let cleanUrl = url.trim();
+
+                // Trường hợp Google Slides
+                if (cleanUrl.includes('docs.google.com/presentation')) {
+                    // Xóa các tham số đằng sau nếu có
+                    let baseUrl = cleanUrl.split('?')[0];
+
+                    // Chuyển đổi các dạng /edit, /pub, /view thành /embed với các tham số ẩn thanh công cụ tối đa
+                    if (baseUrl.includes('/edit') || baseUrl.includes('/pub') || baseUrl.includes('/preview')) {
+                        baseUrl = baseUrl.replace(/\/edit.*$/, '/embed')
+                                         .replace(/\/pub.*$/, '/embed')
+                                         .replace(/\/preview.*$/, '/embed');
+                    } else if (!baseUrl.endsWith('/embed')) {
+                        baseUrl = baseUrl.replace(/\/$/, '') + '/embed';
+                    }
+
+                    // Thêm tham số giúp ẩn giao diện thừa, tự động vừa khung hình
+                    return `${baseUrl}?start=false&loop=false&delayms=3000&rm=minimal`;
+                }
+
+                // Trường hợp Canva
+                if (cleanUrl.includes('canva.com')) {
+                    // Nếu là link nhúng hoặc link xem
+                    if (cleanUrl.includes('/view')) {
+                        let baseUrl = cleanUrl.split('?')[0];
+                        if (!baseUrl.endsWith('/view')) {
+                            baseUrl = baseUrl.replace(/\/view.*$/, '/view');
+                        }
+                        return `${baseUrl}?embed`;
+                    }
+                    if (cleanUrl.includes('/design/')) {
+                        let baseUrl = cleanUrl.split('?')[0];
+                        // Biến đổi link thiết kế dạng /design/DA.../view thành link embed
+                        if (baseUrl.includes('/watch')) {
+                            baseUrl = baseUrl.replace('/watch', '/view');
+                        }
+                        if (!baseUrl.endsWith('?embed')) {
+                            return `${baseUrl}?embed`;
+                        }
+                    }
+                }
+
+                // Nếu không khớp pattern cụ thể nhưng vẫn là URL hợp lệ, giữ nguyên
+                return cleanUrl;
+            } catch (err) {
+                console.error("Lỗi xử lý URL:", err);
+                return url;
+            }
+        }
+
+        // --- 2. XỬ LÝ SỰ KIỆN KHI BẤM "TRÌNH CHIẾU NGAY" ---
+        function handleStartPresentation(e) {
+            e.preventDefault();
+            const urlInput = document.getElementById('slide-url');
+            const errorMsg = document.getElementById('error-message');
+            const rawUrl = urlInput.value;
+
+            if (!rawUrl) return;
+
+            // Chuyển đổi link
+            const embedUrl = parseAndCleanSlideUrl(rawUrl);
+
+            if (!embedUrl) {
+                showError('Vui lòng nhập đường dẫn hợp lệ.');
+                return;
+            }
+
+            hideError();
+
+            // Gán URL vào iframe
+            const iframe = document.getElementById('slide-iframe');
+            iframe.src = embedUrl;
+
+            // Hiển thị khung trình chiếu
+            const presentationView = document.getElementById('presentation-view');
+            presentationView.classList.remove('hidden');
+            presentationView.classList.add('flex');
+
+            // Bật chế độ Fullscreen
+            requestFullscreen(presentationView);
+
+            // Bắt đầu tự động ẩn nút thoát
+            initFloatingExitButton();
+        }
+
+        // --- 3. QUẢN LÝ CHẾ ĐỘ FULLSCREEN API ---
+        function requestFullscreen(element) {
+            if (element.requestFullscreen) {
+                element.requestFullscreen().catch(err => console.log(err));
+            } else if (element.mozRequestFullScreen) { // Firefox
+                element.mozRequestFullScreen().catch(err => console.log(err));
+            } else if (element.webkitRequestFullscreen) { // Chrome, Safari, Opera
+                element.webkitRequestFullscreen().catch(err => console.log(err));
+            } else if (element.msRequestFullscreen) { // IE/Edge
+                element.msRequestFullscreen().catch(err => console.log(err));
+            }
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(err => console.log(err));
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen().catch(err => console.log(err));
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen().catch(err => console.log(err));
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen().catch(err => console.log(err));
+            }
+        }
+
+        // Exit Presentation
+        function exitPresentation() {
+            const presentationView = document.getElementById('presentation-view');
+            const iframe = document.getElementById('slide-iframe');
+
+            // Thu nhỏ màn hình nếu đang fullscreen
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
+                exitFullscreen();
+            }
+
+            // Dừng iframe & ẩn view
+            iframe.src = '';
+            presentationView.classList.add('hidden');
+            presentationView.classList.remove('flex');
+        }
+
+        // Lắng nghe sự kiện bấm ESC hoặc thoát Fullscreen từ hệ thống
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+            // Nếu người dùng nhấn ESC để thoát Fullscreen của trình duyệt
+            if (!isFS) {
+                const presentationView = document.getElementById('presentation-view');
+                if (!presentationView.classList.contains('hidden')) {
+                    exitPresentation();
+                }
+            }
+        }
+
+        // --- 4. ẨN/HIỆN NÚT THOÁT TỰ ĐỘNG (FLOATING EXIT BUTTON) ---
+        let hideBtnTimeout = null;
+
+        function initFloatingExitButton() {
+            const btn = document.getElementById('floating-exit-btn');
+            const container = document.getElementById('presentation-view');
+
+            btn.classList.remove('hidden-btn');
+
+            // Reset hẹn giờ ẩn sau 3 giây
+            clearTimeout(hideBtnTimeout);
+            hideBtnTimeout = setTimeout(() => {
+                btn.classList.add('hidden-btn');
+            }, 3000);
+
+            // Khi di chuột trong màn hình trình chiếu -> Hiện lại nút
+            container.onmousemove = () => {
+                btn.classList.remove('hidden-btn');
+                clearTimeout(hideBtnTimeout);
+                hideBtnTimeout = setTimeout(() => {
+                    btn.classList.add('hidden-btn');
+                }, 3000);
+            };
+        }
+
+        // --- 5. MODAL & UTILS ---
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function showError(msg) {
+            const errorMsg = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+            errorText.textContent = msg;
+            errorMsg.classList.remove('hidden');
+        }
+
+        function hideError() {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
